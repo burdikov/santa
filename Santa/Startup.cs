@@ -14,9 +14,13 @@ namespace Santa
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
+        public Startup()
         {
-            Configuration = configuration;
+            var builder = new ConfigurationBuilder();
+            builder.AddJsonFile("secrets.json");
+            Configuration = builder.Build();
+
+            Bot.Start(Configuration);
         }
 
         public IConfiguration Configuration { get; }
@@ -35,7 +39,13 @@ namespace Santa
                 app.UseDeveloperExceptionPage();
             }
 
-            app.UseMvc();
+            app.UseMvc(routes =>
+            {
+                routes.MapRoute(
+                    name: "Default",
+                    template: "/{controller}/{action}"
+                );
+            });
         }
     }
 }
