@@ -1,0 +1,7 @@
+version: "3"
+services:
+  core:
+    build: ./Santa
+    image: santa-core
+    ports:
+      - "5000:80"
