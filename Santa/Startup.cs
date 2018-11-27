@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -17,6 +18,7 @@ namespace Santa
         public Startup()
         {
             var builder = new ConfigurationBuilder();
+            builder.AddJsonFile("appsettings.json");
             builder.AddJsonFile("secrets.json");
             Configuration = builder.Build();
 
@@ -28,6 +30,12 @@ namespace Santa
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            System.Console.WriteLine("hello from configureservices");
+            System.Console.WriteLine(Configuration["connstr"]);
+            services.AddDbContext<SantaDbContext>(options => {
+                options.UseSqlServer(Configuration["connstr"]);
+            });
+
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
         }
 
@@ -43,7 +51,7 @@ namespace Santa
             {
                 routes.MapRoute(
                     name: "Default",
-                    template: "/{controller}/{action}"
+                    template: "/{controller=Test}/{action=Up}"
                 );
             });
         }
