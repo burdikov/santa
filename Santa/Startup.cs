@@ -30,7 +30,9 @@ namespace Santa
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<SantaDbContext>(options => {
+            services.AddMemoryCache();
+            services.AddDbContext<SantaDbContext>(options =>
+            {
                 options.UseSqlServer(Configuration["connstr"]);
             });
 
