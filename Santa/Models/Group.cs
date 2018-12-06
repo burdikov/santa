@@ -12,5 +12,7 @@ public class Group
 
     public bool Joinable { get; set; }
 
-    public ICollection<Person> Members { get; set; }
+    public Person Owner { get; set; }
+
+    public ICollection<Membership> Members { get; set; }
 }

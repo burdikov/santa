@@ -10,5 +10,6 @@ public class Person
 
     public string Name { get; set; }
 
-    public ICollection<Group> Groups { get; set; }
+    public ICollection<Membership> Groups { get; set; }
+    public ICollection<Group> OwnedGroups { get; set; }
 }
