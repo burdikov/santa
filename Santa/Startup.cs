@@ -1,15 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using Telegram.Bot;
 
 namespace Santa
 {
@@ -21,8 +17,6 @@ namespace Santa
             builder.AddJsonFile("appsettings.json");
             builder.AddJsonFile("secrets.json");
             Configuration = builder.Build();
-
-            Bot.Start(Configuration);
         }
 
         public IConfiguration Configuration { get; }
@@ -36,6 +30,7 @@ namespace Santa
                 options.UseSqlServer(Configuration["connstr"]);
             });
 
+            services.AddSingleton(StartBot());
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
         }
 
@@ -47,6 +42,12 @@ namespace Santa
                 app.UseDeveloperExceptionPage();
             }
 
+            using (var serviceScope = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>().CreateScope())
+            {
+                var context = serviceScope.ServiceProvider.GetService <SantaDbContext>();
+                context.Database.Migrate();
+            }
+
             app.UseMvc(routes =>
             {
                 routes.MapRoute(
@@ -54,6 +55,26 @@ namespace Santa
                     template: "/{controller=Test}/{action=Up}"
                 );
             });
+        }
+
+        private TelegramBotClient StartBot()
+        {
+            var client = new TelegramBotClient(Configuration["token"]);
+            client.SetWebhookAsync($"https://{Configuration["address"]}/api/update").ContinueWith(t =>
+            {
+                if (t.IsFaulted)
+                {
+                    Console.WriteLine("Something is wrong with your webhook!");
+                    Console.WriteLine(t.Exception?.GetBaseException());
+                }
+                else
+                {
+                    var x = client.GetWebhookInfoAsync().Result;
+                    Console.WriteLine($"Bot is up and running. Webhook url: {x.Url}");
+                }
+            });
+
+            return client;
         }
     }
 }

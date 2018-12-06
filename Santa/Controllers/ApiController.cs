@@ -11,11 +11,13 @@ namespace Santa.Controllers
 {
     public class ApiController : Controller
     {
-        IMemoryCache cache;
+        private readonly IMemoryCache _cache;
+        private readonly IServiceProvider _serviceProvider;
 
-        public ApiController(IMemoryCache cache)
+        public ApiController(IMemoryCache cache, IServiceProvider serviceProvider)
         {
-            this.cache = cache;
+            _cache = cache;
+            _serviceProvider = serviceProvider;
         }
 
         [HttpPost]
@@ -26,26 +28,15 @@ namespace Santa.Controllers
 
             if (msg != null && !string.IsNullOrWhiteSpace(msg.Text) && !msg.From.IsBot)
             {
-                var beh = cache.GetOrCreate<Behaviour>(msg.From.Id, entry =>
+                var beh = _cache.GetOrCreate<Behaviour>(msg.From.Id, entry =>
                 {
                     entry.SlidingExpiration = TimeSpan.FromHours(1);
-                    return new IdleBehaviour(Bot.Client);
+                    return new IdleBehaviour();
                 });
 
-                // One message from user at a time.
-                var sem = new Semaphore(1, 1, msg.From.Id.ToString());
-                if (sem.WaitOne(0))
-                {
-                    try
-                    {
-                        var next = await beh.ProcessAsync(u);
-                        cache.Set(msg.From.Id, next ?? new IdleBehaviour(Bot.Client));
-                    }
-                    finally
-                    {
-                        sem.Release();
-                    }
-                }
+                // TODO synchronize processing of messages from particular chat
+                var next = await beh.ProcessAsync(_serviceProvider, u);
+                _cache.Set(msg.From.Id, next ?? new IdleBehaviour());
             }
 
             return Ok();
